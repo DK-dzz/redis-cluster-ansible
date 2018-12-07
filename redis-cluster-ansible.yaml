@@ -1,0 +1,165 @@
+---
+- hosts: redislist
+
+  vars:
+    - redis_port: ['6379','6380','6381']
+    - redis_home: '/app/redis'
+    - redis_url: "http://download.redis.io/releases/redis-4.0.11.tar.gz"
+    - IP: "{{ ansible_ens33['ipv4']['address'] }}"
+  tasks:    
+    - name: prepare the environment
+      yum: name={{ item }} state=present
+      with_items:
+        - gcc
+        - gcc-*
+        - automake
+        - autoconf
+        - libtool
+        - make
+        - zlib
+        - zlib-devel
+        - glibc-*
+        - tcl
+        - ruby
+        - ruby-devel
+        - rubygems
+        - rpm-build
+
+
+    - name: Download Redis-4.0.11 package
+      get_url: url={{ redis_url }} dest=/tmp/redis-4.0.11.tar.gz
+
+    - name: Untar Redis file
+      command: tar zxf /tmp/redis-4.0.11.tar.gz -C /tmp
+
+    - name: Build Redis file
+      command: make -C /tmp/redis-4.0.11
+
+    - name: Create Redis group
+      group: name=redis state=present gid=2000
+
+    - name: Create Redis user
+      user: name=redis uid=2000 group=redis createhome=no shell=/bin/bash  state=present
+
+    - name: Create the Redis dir
+      file: path={{ redis_home }}/{{ item[0] }}/{{ item[1] }} state=directory group=redis owner=redis mode=0750 
+      with_nested:
+        - "{{ redis_port }}"
+        - ['data','conf','logs']
+
+    - name: Copy Redis conf file
+      command: cp /tmp/redis-4.0.11/redis.conf  {{ redis_home }}/{{ item }}/conf/redis-{{ item }}.conf
+      with_items:
+        - "{{ redis_port }}"
+
+
+    - name: Installing Redis binaries
+      command: cp /tmp/redis-4.0.11/src/{{ item }} /usr/local/bin 
+      with_items: 
+        - redis-server
+        - redis-cli
+        - redis-check-aof
+        - redis-trib.rb
+        - redis-benchmark
+        - redis-check-rdb
+
+
+    - name: Modifying  Redis Conf -> "bind"
+      lineinfile: dest={{ redis_home }}/{{ item }}/conf/redis-{{ item }}.conf  regexp="^bind"  line="bind {{IP}}"  
+      with_items:
+        - "{{ redis_port }}"
+
+    - name: Modifying  Redis Conf -> "pidfile"
+      lineinfile: dest={{ redis_home }}/{{ item }}/conf/redis-{{ item }}.conf  regexp="^pidfile"  line="pidfile {{ redis_home }}/{{ item }}/logs/redis-{{ item }}.pid"  
+      with_items:
+        - "{{ redis_port }}"
+
+    - name: Modifying  Redis Conf -> "logfile"
+      lineinfile: dest={{ redis_home }}/{{ item }}/conf/redis-{{ item }}.conf  regexp="^logfile"  line="logfile {{ redis_home }}/{{ item }}/logs/redis-{{ item }}.log"  
+      with_items:
+        - "{{ redis_port }}"
+
+    - name: Modifying  Redis Conf -> "dir"
+      lineinfile: dest={{ redis_home }}/{{ item }}/conf/redis-{{ item }}.conf  regexp="^dir"  line="dir {{ redis_home }}/{{ item }}/data"  
+      with_items:
+        - "{{ redis_port }}"
+
+    - name: Modifying  Redis Conf -> "port"
+      lineinfile: dest={{ redis_home }}/{{ item }}/conf/redis-{{ item }}.conf  regexp="^port"  line="port {{ item }}"  
+      with_items:
+        - "{{ redis_port }}"
+
+    - name: Modifying  Redis Conf -> "daemonize"
+      lineinfile: dest={{ redis_home }}/{{ item }}/conf/redis-{{ item }}.conf  regexp="^daemonize"  line="daemonize yes"  
+      with_items:
+        - "{{ redis_port }}"
+
+    - name: Modifying  Redis Conf -> "maxmemory"
+      lineinfile: dest={{ redis_home }}/{{ item }}/conf/redis-{{ item }}.conf  regexp='# maxmemory <bytes>'  line="maxmemory 200000000"  
+      with_items:
+        - "{{ redis_port }}"
+
+    - name: Modifying  Redis Conf -> "maxmemory-policy"
+      lineinfile: dest={{ redis_home }}/{{ item }}/conf/redis-{{ item }}.conf  regexp='# maxmemory-policy noeviction'  line="maxmemory-policy volatile-lru"  
+      with_items:
+        - "{{ redis_port }}"
+
+    - name: Modifying  Redis Conf -> "cluster-enabled"
+      lineinfile: dest={{ redis_home }}/{{ item }}/conf/redis-{{ item }}.conf  regexp='# cluster-enabled yes'  line="cluster-enabled yes"  
+      with_items:
+        - "{{ redis_port }}"
+
+    - name: Modifying  Redis Conf -> "cluster-node-timeout"
+      lineinfile: dest={{ redis_home }}/{{ item }}/conf/redis-{{ item }}.conf  regexp='# cluster-node-timeout 15000'  line="cluster-node-timeout 10000"  
+      with_items:
+        - "{{ redis_port }}"
+
+
+    - name: copy init script
+      copy: src=redis_init_script dest=/etc/init.d/redis_{{ item }}
+      with_items:
+        - "{{ redis_port }}"
+
+    - name: Modifying  Redis init script -> "REDISPORT"
+      lineinfile: dest=/etc/init.d/redis_{{ item }}  regexp="^REDISPORT"  line="REDISPORT={{ item }}"  
+      with_items:
+        - "{{ redis_port }}"
+
+    - name: Modifying  Redis init script -> "PIDFILE"
+      lineinfile: dest=/etc/init.d/redis_{{ item }}  regexp="^PIDFILE"  line="PIDFILE={{ redis_home }}/{{ item }}/logs/redis-{{ item }}.pid"  
+      with_items:
+        - "{{ redis_port }}"
+
+    - name: Modifying  Redis init script -> "CONF"
+      lineinfile: dest=/etc/init.d/redis_{{ item }}  regexp="^CONF"  line='CONF="{{ redis_home }}/{{ item }}/conf/redis-{{ item }}.conf"' 
+      with_items:
+        - "{{ redis_port }}"
+
+    - name: Modifying  Redis init script -> "CLIEXEC"
+      lineinfile: dest=/etc/init.d/redis_{{ item }}  regexp="^CLIEXEC"  line="CLIEXEC='/usr/local/bin/redis-cli -h {{IP}} ' " 
+      with_items:
+        - "{{ redis_port }}"
+
+
+    - name: chkconfig Redis 
+      command: chmod +x   /etc/init.d/redis_{{ item }}
+      with_items: 
+        - "{{ redis_port }}"
+
+    - name: chkconfig Redis 
+      command: chkconfig  --add  redis_{{ item }}
+      with_items: 
+        - "{{ redis_port }}"
+
+    - name: chkconfig Redis 
+      command: chkconfig  --level 345 redis_{{ item }} on
+      with_items: 
+        - "{{ redis_port }}"
+
+
+    - name: Cleaning up build files
+      command: rm -rf /tmp/{{ item }}
+      with_items:
+       - redis-4.0.11
+       - redis-4.0.11.tar.gz
+
