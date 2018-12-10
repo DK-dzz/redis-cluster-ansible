@@ -37,3 +37,73 @@ deploy redis cluster by ansible
 yes </br>
  </br>
 EOF </br>
+
+
+#notice : tree of file
+tree /app/redis/</br>
+[root@ansible-01-sz ~]# /app/redis/</br>
+├── 6379</br>
+│?? ├── conf</br>
+│?? │?? └── redis-6379.conf</br>
+│?? ├── data</br>
+│?? │?? ├── dump.rdb</br>
+│?? │?? └── nodes.conf</br>
+│?? └── logs</br>
+│??     └── redis-6379.log</br>
+├── 6380</br>
+│?? ├── conf</br>
+│?? │?? └── redis-6380.conf</br>
+│?? ├── data</br>
+│?? │?? ├── dump.rdb</br>
+│?? │?? └── nodes.conf</br>
+│?? └── logs</br>
+│??     ├── redis-6380.log</br>
+│??     └── redis-6380.pid</br>
+├── 6381</br>
+│?? ├── conf</br>
+│?? │?? └── redis-6381.conf</br>
+│?? ├── data</br>
+│?? │?? ├── dump.rdb</br>
+│?? │?? └── nodes.conf</br>
+│?? └── logs</br>
+│??     ├── redis-6381.log</br>
+│??     └── redis-6381.pid</br>
+├── 6382</br>
+│?? ├── conf</br>
+│?? │?? └── redis-6382.conf</br>
+│?? ├── data</br>
+│?? │?? ├── dump.rdb</br>
+│?? │?? └── nodes.conf</br>
+│?? └── logs</br>
+│??     ├── redis-6382.log</br>
+│??     └── redis-6382.pid</br>
+├── 6383</br>
+│?? ├── conf</br>
+│?? │?? └── redis-6383.conf</br>
+│?? ├── data</br>
+│?? │?? ├── dump.rdb</br>
+│?? │?? └── nodes.conf</br>
+│?? └── logs</br>
+│??     ├── redis-6383.log</br>
+│??     └── redis-6383.pid</br>
+└── 6384</br>
+    ├── conf</br>
+    │?? └── redis-6384.conf</br>
+    ├── data</br>
+    │?? ├── dump.rdb</br>
+    │?? └── nodes.conf</br>
+    └── logs</br>
+        ├── redis-6384.log</br>
+        └── redis-6384.pid</br>
+</br>
+
+
+
+
+[root@ansible-01-sz ~]# find  /etc/init.d/  -name redis*</br>
+/etc/init.d/redis_6382</br>
+/etc/init.d/redis_6383</br>
+/etc/init.d/redis_6380</br>
+/etc/init.d/redis_6381</br>
+/etc/init.d/redis_6384</br>
+/etc/init.d/redis_6379</br>
