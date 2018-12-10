@@ -1,7 +1,8 @@
 # redis-cluster-ansible
 deploy redis cluster by ansible
 
-#step 1 </br>
+
+#step 1: edit ip for redis nodes </br>
 [root@ansible-01-sz ~]# vim  redisnodes </br>
 [redisnodes] </br>
 192.168.1.3 </br>
@@ -10,8 +11,10 @@ deploy redis cluster by ansible
 192.168.1.6 </br>
 192.168.1.7 </br>
 192.168.1.8 </br>
+......
 
-#step 2 </br>
+
+#step 2:edit yaml </br>
 [root@ansible-01-sz ~]#vim redis-cluster-ansible.yaml </br>
 ... </br>
   vars: </br>
@@ -23,8 +26,9 @@ deploy redis cluster by ansible
 ... </br>
 
 
-#step 3 </br>
+#step 3: install</br>
 [root@ansible-01-sz ~]# ansible-playbook -i redisnodes  redis-cluster-ansible.yaml </br>
+
 
 
 
