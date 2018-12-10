@@ -25,3 +25,11 @@ deploy redis cluster by ansible
 
 #step 3 </br>
 [root@ansible-01-sz ~]# ansible-playbook -i redisnodes  redis-cluster-ansible.yaml </br>
+
+
+
+#notice : create cluster by yourself
+redis-trib.rb create --replicas 1 IP1:PORT1 IP2:PORT2 IP3:PORT4 ... <<EOF
+yes
+
+EOF
