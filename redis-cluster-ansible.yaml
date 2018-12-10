@@ -1,11 +1,17 @@
 ---
-- hosts: redislist
+- hosts: list
 
   vars:
+ #   - redis_port: "{{ port|default(6379) }}"
     - redis_port: ['6379','6380','6381']
     - redis_home: '/app/redis'
-    - redis_url: "http://download.redis.io/releases/redis-4.0.11.tar.gz"
-    - IP: "{{ ansible_ens33['ipv4']['address'] }}"
+    - redis_version: 'redis-4.0.11'
+    - redis_url: "http://download.redis.io/releases/{{ redis_version }}.tar.gz"
+    - IP: "{{ ansible_e['ipv4']['address'] }}"
+    - ruby_version: '2.5.1'
+    - rvm_path: "/usr/local/rvm/gems/ruby-{{ ruby_version }}/bin:/usr/local/rvm/gems/ruby-{{ ruby_version }}@global/bin:/usr/local/rvm/rubies/ruby-{{ ruby_version }}/bin:/usr/local/rvm/bin"
+
+
   tasks:    
     - name: prepare the environment
       yum: name={{ item }} state=present
@@ -20,20 +26,16 @@
         - zlib-devel
         - glibc-*
         - tcl
-        - ruby
-        - ruby-devel
-        - rubygems
-        - rpm-build
 
 
-    - name: Download Redis-4.0.11 package
-      get_url: url={{ redis_url }} dest=/tmp/redis-4.0.11.tar.gz
+    - name: Download Redis package
+      get_url: url={{ redis_url }} dest=/tmp/{{ redis_version }}.tar.gz
 
     - name: Untar Redis file
-      command: tar zxf /tmp/redis-4.0.11.tar.gz -C /tmp
+      command: tar zxf /tmp/{{ redis_version }}.tar.gz -C /tmp
 
     - name: Build Redis file
-      command: make -C /tmp/redis-4.0.11
+      command: make -C /tmp/{{ redis_version }}
 
     - name: Create Redis group
       group: name=redis state=present gid=2000
@@ -41,20 +43,32 @@
     - name: Create Redis user
       user: name=redis uid=2000 group=redis createhome=no shell=/bin/bash  state=present
 
+#    - name: Create the dir
+#      file: path={{ item }} state=directory group=redis owner=redis mode=0750 
+#      with_items:
+#        - "{{ redis_home }}"
+#        - "{{ redis_home }}/{{ redis_port }}"
+#        - "{{ redis_home }}/{{ redis_port }}/data"
+#        - "{{ redis_home }}/{{ redis_port }}/conf"
+#        - "{{ redis_home }}/{{ redis_port }}/logs"
+
     - name: Create the Redis dir
       file: path={{ redis_home }}/{{ item[0] }}/{{ item[1] }} state=directory group=redis owner=redis mode=0750 
       with_nested:
         - "{{ redis_port }}"
         - ['data','conf','logs']
 
+#    - name: copy redis.conf file
+#      command: cp /tmp/redis-4.0.11/redis.conf  {{ redis_home }}/{{ redis_port }}/conf/redis-{{ redis_port }}.conf
+
     - name: Copy Redis conf file
-      command: cp /tmp/redis-4.0.11/redis.conf  {{ redis_home }}/{{ item }}/conf/redis-{{ item }}.conf
+      command: cp /tmp/{{ redis_version }}/redis.conf  {{ redis_home }}/{{ item }}/conf/redis-{{ item }}.conf
       with_items:
         - "{{ redis_port }}"
 
 
     - name: Installing Redis binaries
-      command: cp /tmp/redis-4.0.11/src/{{ item }} /usr/local/bin 
+      command: cp /tmp/{{ redis_version }}/src/{{ item }} /usr/local/bin 
       with_items: 
         - redis-server
         - redis-cli
@@ -157,9 +171,40 @@
         - "{{ redis_port }}"
 
 
-    - name: Cleaning up build files
-      command: rm -rf /tmp/{{ item }}
-      with_items:
-       - redis-4.0.11
-       - redis-4.0.11.tar.gz
 
+  tasks:    
+    - name: prepare the environment
+      yum: name={{ item }} state=present
+      with_items:
+        - ruby
+        - ruby-devel
+        - rubygems
+        - rpm-build
+
+    - name: import rvm gpg2
+      shell: " curl -sSL https://rvm.io/mpapis.asc | gpg2 --import - "
+
+    - name: install rvm 2.5 
+      shell: " curl -sSL https://get.rvm.io | bash "
+      args:
+         creates: /usr/local/rvm
+
+    - name: install ruby-{{ ruby_version }}
+      command: "rvm install ruby-{{ ruby_version }}"
+      environment:
+         PATH: "{{ rvm_path }}:{{ ansible_env.PATH }}"
+      args:
+         creates: "/usr/local/rvm/gems/ruby-{{ ruby_version }}"
+
+    - name: gem install ruby
+      command: "gem install redis"
+      environment:
+         PATH: "{{ rvm_path }}:{{ ansible_env.PATH }}"
+
+
+  tasks:  
+    - name: Cleaning up build files
+      file: path= /tmp/{{ item }} state=absent
+      with_items:
+       - "{{ redis_version }}"
+       - "{{ redis_version }}".tar.gz
