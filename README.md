@@ -28,8 +28,8 @@ deploy redis cluster by ansible
 
 
 
-#notice : create cluster by yourself
-redis-trib.rb create --replicas 1 IP1:PORT1 IP2:PORT2 IP3:PORT4 ... <<EOF
-yes
-
-EOF
+#notice : create cluster by yourself </br>
+[root@ansible-01-sz ~]# redis-trib.rb create --replicas 1 IP1:PORT1 IP2:PORT2 IP3:PORT4 ... <<EOF </br>
+yes </br>
+ </br>
+EOF </br>
