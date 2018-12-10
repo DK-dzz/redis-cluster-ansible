@@ -1,5 +1,5 @@
 ---
-- hosts: list
+- hosts: test
 
   vars:
  #   - redis_port: "{{ port|default(6379) }}"
@@ -7,10 +7,9 @@
     - redis_home: '/app/redis'
     - redis_version: 'redis-4.0.11'
     - redis_url: "http://download.redis.io/releases/{{ redis_version }}.tar.gz"
-    - IP: "{{ ansible_e['ipv4']['address'] }}"
+    - IP: "{{ ansible_ens33['ipv4']['address'] }}"
     - ruby_version: '2.5.1'
     - rvm_path: "/usr/local/rvm/gems/ruby-{{ ruby_version }}/bin:/usr/local/rvm/gems/ruby-{{ ruby_version }}@global/bin:/usr/local/rvm/rubies/ruby-{{ ruby_version }}/bin:/usr/local/rvm/bin"
-
 
   tasks:    
     - name: prepare the environment
@@ -171,8 +170,6 @@
         - "{{ redis_port }}"
 
 
-
-  tasks:    
     - name: prepare the environment
       yum: name={{ item }} state=present
       with_items:
@@ -201,8 +198,6 @@
       environment:
          PATH: "{{ rvm_path }}:{{ ansible_env.PATH }}"
 
-
-  tasks:  
     - name: Cleaning up build files
       file: path= /tmp/{{ item }} state=absent
       with_items:
